@@ -1,3 +1,3 @@
-void liberaMapa();
-void leMapa();
-void alocaMapa();
+int acabou();
+
+void move(char d);

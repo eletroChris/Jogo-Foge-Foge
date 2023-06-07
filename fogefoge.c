@@ -1,20 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "fogefoge.h"
 #include "mapa.h"
+#include "ui.h"
 
 MAPA m;
+POSICAO heroi;
+int temPilula =0;
 
 
 int main(){
     
     leMapa(&m);
+    encontraMapa(&m,&heroi,HEROI);
+
     do{
+        printf("Tem Pílula? %s",(temPilula? "SIM\n":"NÃO\n"));
+        fantasmas();
         imprimeMapa(&m);
         char comando;
         scanf(" %c",&comando);
         move(comando);
-
+        if(comando==BOMBA){
+            explodePilula();
+        }
+        
     }while(!acabou());
 
     
@@ -22,38 +33,126 @@ int main(){
     liberaMapa(&m);    
 }
 
-void move(char direcao){
-    int x;
-    int y;
-    for(int i=0;i<m.linhas;i++){
-        for(int j=0;j<m.colunas;j++){
-            if(m.matriz[i][j]=='@'){
-                x=i;
-                y=j;
-                break;
-            }
+void explodePilula(){
+    if(!temPilula){
+        return;
+    }
+
+    explodePilula2(heroi.x,heroi.y,0,1,3);
+    explodePilula2(heroi.x,heroi.y,0,-1,3);
+    explodePilula2(heroi.x,heroi.y,1,0,3);
+    explodePilula2(heroi.x,heroi.y,-1,0,3);
+
+    temPilula=0;
+}
+
+void explodePilula2(int x, int y, int somax, int somay, int qtd){
+    if(qtd==0){
+        return;
+    }
+    
+    int novox = x+somax;
+    int novoy = y+somay;
+
+    if(!ehValida(&m,novox,novoy)){
+        return;
+    }
+    if(ehParede(&m,novox,novoy)){
+        return;
+    }
+    m.matriz[novox][novoy]=VAZIO;
+    
+    explodePilula2(novox,novoy,somax,somay,qtd-1);
+}
+
+int praOndeFantasmaVai(int xatual,int yatual,int *xdestino,int *ydestino){
+    int opcoes[4][2]={
+        {xatual,yatual+1},
+        {xatual+1,yatual},
+        {xatual,yatual-1},
+        {xatual-1,yatual}
+    };
+
+    srand(time(0));
+    for(int i=0;i<10;i++){
+        int posicao=rand()%4;
+        if(podeAndar(&m,FANTASMA,opcoes[posicao][0],opcoes[posicao][1])){
+            *xdestino=opcoes[posicao][0];
+            *ydestino=opcoes[posicao][1];
+            return 1;
         }
     }
+    return 0;
+
+}
+
+void fantasmas(){
+    MAPA copia;
+    copiaMapa(&copia,&m);
+    for(int i=0;i< m.linhas;i++){
+        for(int j=0;j< m.colunas;j++){
+            if(copia.matriz[i][j]==FANTASMA){
+                int xdestino;
+                int ydestino;
+                
+                int encontrou =praOndeFantasmaVai(i,j,&xdestino,&ydestino);
+                
+                if(encontrou){
+                    andaNoMapa(&m,i,j,xdestino,ydestino);
+                }
+            }
+        }
+
+    }
+    liberaMapa(&copia);
+}
+
+int ehDirecao(char direcao){
+    return direcao==ESQUERDA || direcao==CIMA || direcao==BAIXO || direcao==DIREITA;
+}
+
+void move(char direcao){
+
+    if(!ehDirecao(direcao)){
+        return;
+    }
+    
+    int proximox=heroi.x;
+    int proximoy=heroi.y;
 
     switch(direcao){
-        case 'a':
-            m.matriz[x][y-1]='@';
+        case ESQUERDA:
+            proximoy--;
             break;
-        case 'w':
-            m.matriz[x-1][y]='@';
+        case CIMA:
+            proximox--;
             break;
-        case 's':
-            m.matriz[x+1][y]='@';
+        case BAIXO:
+            proximox++;
             break;
-        case 'd':
-            m.matriz[x][y+1]='@';
+        case DIREITA:
+            proximoy++;
             break;
     }
 
-    m.matriz[x][y]='.';
+    if(!podeAndar(&m,FANTASMA,proximox,proximoy)){
+        return;
+    }
+    
+    if(ehPersonagem(&m,PILULA,proximox,proximoy)){
+        temPilula=1;
+    }
+
+    andaNoMapa(&m,heroi.x,heroi.y,proximox,proximoy);    
+
+    heroi.x=proximox;
+    heroi.y=proximoy;
+    
 }
 
 int acabou(){
-    return 0;
+    POSICAO pos;
+    int fogefogenomapa = encontraMapa(&m,&pos, HEROI);
+    return !fogefogenomapa;
 }
 

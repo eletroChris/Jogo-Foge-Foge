@@ -11,5 +11,5 @@ Para mover-se no jogo utiliza-se as teclas 'ASWD'. Ao pegar uma pílula, o Pacma
 
 * A pílula de poder aparece somente no início do jogo. Para derrotar todos os fantasmas ela teria que aparecer mais vezes.
 
-![imagem do terminal] https://github.com/eletroChris/Jogo-Foge-Foge/blob/master/Terminal.png
+![imagem do terminal]/Terminal.png
 
